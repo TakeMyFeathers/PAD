@@ -1,3 +1,5 @@
+# TODO: Rafactor this shit
+
 from tkinter import Button, Frame, Tk, Label, StringVar
 import math
 import re
