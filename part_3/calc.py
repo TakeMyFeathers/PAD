@@ -1,4 +1,5 @@
 from tkinter import Button, Frame, Tk, Label, StringVar
+import math
 import re
 
 WHITE = "#ffffff"
@@ -14,10 +15,10 @@ DIGITS_FONT_STYLE = ("Arial", 24, "bold")
 DEFAULT_FONT_STYLE = ("Arial", 20)
 
 DIGITS = {
-    "7": (1, 1), "8": (1, 2), "9": (1, 3),
-    "4": (2, 1), "5": (2, 2), "6": (2, 3),
-    "1": (3, 1), "2": (3, 2), "3": (3, 3),
-    "0": (4, 2), ".": (4, 1)
+    "7": (2, 1), "8": (2, 2), "9": (2, 3),
+    "4": (3, 1), "5": (3, 2), "6": (3, 3),
+    "1": (4, 1), "2": (4, 2), "3": (4, 3),
+    "0": (5, 2), ".": (5, 3)
 }
 
 OPERATORS = {"/": "\u00F7", "*": "\u00D7", "-": "-", "+": "+"}
@@ -41,7 +42,7 @@ class Calculator:
         self.buttons_frame = self.create_buttons_frame()
 
         self.buttons_frame.rowconfigure(0, weight=1)
-
+        self.buttons_frame.rowconfigure(5, weight=1)
         for x in range(1, 5):
             self.buttons_frame.rowconfigure(x, weight=1)
             self.buttons_frame.columnconfigure(x, weight=1)
@@ -67,13 +68,33 @@ class Calculator:
         for operator, symbol in OPERATORS.items():
             button = Button(self.buttons_frame, text=symbol, command=lambda o=operator: self.append_operator(
                 o), bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
-            button.grid(row=i, column=4, sticky="nsew")
+            button.grid(row=i+1, column=4, sticky="nsew")
             i += 1
+
+    def create_sign_button(self):
+        button= Button(self.buttons_frame, text="\u00B1", command=self.change_sign, bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
+        button.grid(row=5, column=1, sticky="nsew")
+
+    def create_absv_button(self):
+        button= Button(self.buttons_frame, text="|x|", command=lambda: self.curr_exp.set(self.curr_exp.get().replace("-", "")) , bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
+        button.grid(row=1, column=1, sticky="nsew")
+
+    def create_sqrt_button(self):
+        button= Button(self.buttons_frame, text="\u221A", command=lambda: self.curr_exp.set(round(math.sqrt(int(self.curr_exp.get())), 3)) , bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
+        button.grid(row=1, column=2, sticky="nsew")
+
+    def create_mod_button(self):
+        button= Button(self.buttons_frame, text="mod", command=lambda: self.append_operator(" %") , bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
+        button.grid(row=0, column=4, sticky="nsew")        
+
+    def create_exp_button(self):
+        button= Button(self.buttons_frame, text="x^y", command=lambda: self.append_operator("**") , bg=DARK, fg=WHITE, font=DEFAULT_FONT_STYLE)
+        button.grid(row=1, column=3, sticky="nsew") 
 
     def create_equals_button(self):
         button = Button(self.buttons_frame, text="=", bg=LIGHT_BLUE,
                         fg="#000000", font=DEFAULT_FONT_STYLE, command=self.evaluate)
-        button.grid(row=4, column=3, columnspan=2, sticky="nsew")
+        button.grid(row=5, column=4, sticky="nsew")
 
     def create_clear_button(self):
         button = Button(self.buttons_frame, text="C", bg=LIGHT_BLUE,
@@ -81,6 +102,11 @@ class Calculator:
         button.grid(row=0, column=1, columnspan=3, sticky="nsew")
 
     def create_special_buttons(self):
+        self.create_sign_button()
+        self.create_absv_button()
+        self.create_sqrt_button()
+        self.create_mod_button()
+        self.create_exp_button()
         self.create_equals_button()
         self.create_clear_button()
 
@@ -112,17 +138,19 @@ class Calculator:
         return total_label, current_label
 
     def add_to_expression(self, value):
+        exp = self.curr_exp.get()+value
 
-        if len(self.curr_exp.get()+value) > 9:
+        if len(exp) > 9:
             return
+        if re.search("^(0[0-9])", exp):
+            exp=exp[1:]
+        if re.search("([0-9]\.\.)", exp):
+            return
+        if exp.count(".") > 1:
+            return 
 
-        self.curr_exp.set(self.curr_exp.get()+value)
-        if re.search("^(0[0-9])", self.curr_exp.get()):
-            self.curr_exp.set(self.curr_exp.get()[1:])
-        if re.search("([0-9]\.\.)", self.curr_exp.get()):
-            self.delete()
-        if self.curr_exp.get().count(".") > 1:
-            self.delete()
+        self.curr_exp.set(exp)
+        
 
     def append_operator(self, operator):
         self.curr_exp.set(self.curr_exp.get()+operator)
@@ -135,6 +163,11 @@ class Calculator:
     def clear(self):
         self.total_exp.set("")
         self.curr_exp.set("")
+
+    def change_sign(self):
+        if self.curr_exp.get().count("-") == 1:
+            return
+        self.curr_exp.set("-"+self.curr_exp.get())
 
     def evaluate(self):
         self.curr_exp.set(eval(self.total_exp.get()+self.curr_exp.get()))
